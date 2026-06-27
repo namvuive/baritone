@@ -999,6 +999,13 @@ public final class Settings {
     public final Setting<Boolean> extendCacheOnThreshold = new Setting<>(false);
 
     /**
+     * 1: BuildInLayers will build in Y layers
+     * 2: BuildInLayers will build in X layers
+     * 3: BuildInLayers will build in Z layers
+     */
+    public final Setting<Integer> layerType = new Setting<>(1);
+
+    /**
      * Don't consider the next layer in builder until the current one is done
      */
     public final Setting<Boolean> buildInLayers = new Setting<>(false);

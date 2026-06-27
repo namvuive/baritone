@@ -123,7 +123,11 @@ archivesBaseName = archivesBaseName + "-common"
 sourceSets {
     api {
         compileClasspath += main.compileClasspath
+        compileClasspath += configurations.minecraft
+        compileClasspath += configurations.minecraftLibraries
         runtimeClasspath += main.runtimeClasspath
+        runtimeClasspath += configurations.minecraft
+        runtimeClasspath += configurations.minecraftLibraries
     }
     main {
         compileClasspath += api.output
@@ -139,7 +143,11 @@ sourceSets {
     }
     schematica_api {
         compileClasspath += main.compileClasspath
+        compileClasspath += configurations.minecraft
+        compileClasspath += configurations.minecraftLibraries
         runtimeClasspath += main.runtimeClasspath
+        runtimeClasspath += configurations.minecraft
+        runtimeClasspath += configurations.minecraftLibraries
     }
     main {
         compileClasspath += schematica_api.output

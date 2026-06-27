@@ -438,6 +438,17 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         return onTick(calcFailed, isSafeToCancel, 0);
     }
 
+    private int totalLength(ISchematic s) {
+        int layerType = Baritone.settings().layerType.value;
+        if (layerType == 2) { // X
+            return s.widthX();
+        } else if (layerType == 3) { // Z
+            return s.lengthZ();
+        } else { // Y
+            return s.heightY();
+        }
+    }
+
     private PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel, int recursions) {
         if (recursions > 100) { // onTick calls itself, don't crash
             return new PathingCommand(null, PathingCommandType.SET_GOAL_AND_PATH);
@@ -457,17 +468,30 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                 realSchematic = schematic;
             }
             ISchematic realSchematic = this.realSchematic; // wrap this properly, dont just have the inner class refer to the builderprocess.this
-            int minYInclusive;
-            int maxYInclusive;
+            int minInclusive;
+            int maxInclusive;
+            int layerType = Baritone.settings().layerType.value;
+            int layerHeight = Baritone.settings().layerHeight.value;
+
             // layer = 0 should be nothing
-            // layer = realSchematic.heightY() should be everything
-            if (Baritone.settings().layerOrder.value) { // top to bottom
-                maxYInclusive = realSchematic.heightY() - 1;
-                minYInclusive = realSchematic.heightY() - layer * Baritone.settings().layerHeight.value;
-            } else {
-                maxYInclusive = layer * Baritone.settings().layerHeight.value - 1;
-                minYInclusive = 0;
+            // layer = total length should be everything
+            int totalLength;
+            if (layerType == 2) { // X
+                totalLength = realSchematic.widthX();
+            } else if (layerType == 3) { // Z
+                totalLength = realSchematic.lengthZ();
+            } else { // Y
+                totalLength = realSchematic.heightY();
             }
+
+            if (Baritone.settings().layerOrder.value) { // reverse order
+                maxInclusive = totalLength - 1;
+                minInclusive = totalLength - layer * layerHeight;
+            } else {
+                maxInclusive = layer * layerHeight - 1;
+                minInclusive = 0;
+            }
+
             schematic = new ISchematic() {
                 @Override
                 public BlockState desiredState(int x, int y, int z, BlockState current, List<BlockState> approxPlaceable) {
@@ -476,7 +500,15 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
 
                 @Override
                 public boolean inSchematic(int x, int y, int z, BlockState currentState) {
-                    return ISchematic.super.inSchematic(x, y, z, currentState) && y >= minYInclusive && y <= maxYInclusive && realSchematic.inSchematic(x, y, z, currentState);
+                    int val;
+                    if (layerType == 2) {
+                        val = x;
+                    } else if (layerType == 3) {
+                        val = z;
+                    } else {
+                        val = y;
+                    }
+                    return ISchematic.super.inSchematic(x, y, z, currentState) && val >= minInclusive && val <= maxInclusive && realSchematic.inSchematic(x, y, z, currentState);
                 }
 
                 @Override
@@ -502,7 +534,16 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         }
         BuilderCalculationContext bcc = new BuilderCalculationContext();
         if (!recalc(bcc)) {
-            if (Baritone.settings().buildInLayers.value && layer * Baritone.settings().layerHeight.value < stopAtHeight) {
+            int totalLength;
+            int layerType = Baritone.settings().layerType.value;
+            if (layerType == 2) { // X
+                totalLength = realSchematic.widthX();
+            } else if (layerType == 3) { // Z
+                totalLength = realSchematic.lengthZ();
+            } else { // Y
+                totalLength = realSchematic.heightY();
+            }
+            if (Baritone.settings().buildInLayers.value && layer * Baritone.settings().layerHeight.value < totalLength) {
                 logDirect("Starting layer " + layer);
                 layer++;
                 return onTick(calcFailed, isSafeToCancel, recursions + 1);
@@ -595,7 +636,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (goal == null) {
             goal = assemble(bcc, approxPlaceable, true); // we're far away, so assume that we have our whole inventory to recalculate placeable properly
             if (goal == null) {
-                if (Baritone.settings().skipFailedLayers.value && Baritone.settings().buildInLayers.value && layer * Baritone.settings().layerHeight.value < realSchematic.heightY()) {
+                if (Baritone.settings().skipFailedLayers.value && Baritone.settings().buildInLayers.value && layer * Baritone.settings().layerHeight.value < totalLength(realSchematic)) {
                     logDirect("Skipping layer that I cannot construct! Layer #" + layer);
                     layer++;
                     return onTick(calcFailed, isSafeToCancel, recursions + 1);
