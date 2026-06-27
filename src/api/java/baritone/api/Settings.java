@@ -999,6 +999,12 @@ public final class Settings {
     public final Setting<Boolean> extendCacheOnThreshold = new Setting<>(false);
 
     /**
+     * MapArtMode but instead of just top block, builds in a staircase pattern.
+     * Requires LayerType 2 or 3.
+     */
+    public final Setting<Boolean> staircaseMapArtMode = new Setting<>(false);
+
+    /**
      * 1: BuildInLayers will build in Y layers
      * 2: BuildInLayers will build in X layers
      * 3: BuildInLayers will build in Z layers

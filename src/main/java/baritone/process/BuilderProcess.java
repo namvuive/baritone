@@ -111,6 +111,13 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (Baritone.settings().buildSchematicRotation.value != net.minecraft.world.level.block.Rotation.NONE) {
             this.schematic = new RotatedSchematic(this.schematic, Baritone.settings().buildSchematicRotation.value);
         }
+        if (Baritone.settings().staircaseMapArtMode.value) {
+            int layerType = Baritone.settings().layerType.value;
+            if (layerType != 2 && layerType != 3) {
+                logDirect("StaircaseMapArtMode requires LayerType to be 2 or 3!");
+                this.stopAtHeight = 0;
+            }
+        }
         // TODO this preserves the old behavior, but maybe we should bake the setting value right here
         this.schematic = new MaskSchematic(this.schematic) {
             @Override
@@ -484,7 +491,11 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                 totalLength = realSchematic.heightY();
             }
 
-            if (Baritone.settings().layerOrder.value) { // reverse order
+            if (Baritone.settings().staircaseMapArtMode.value) {
+                // custom staircase logic: minInclusive based on y coordinate of schematic
+                minInclusive = 0; // always build from bottom
+                maxInclusive = layer * layerHeight - 1;
+            } else if (Baritone.settings().layerOrder.value) { // top to bottom
                 maxInclusive = totalLength - 1;
                 minInclusive = totalLength - layer * layerHeight;
             } else {
