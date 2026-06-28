@@ -1232,8 +1232,6 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             }
             BlockState sch = getSchematic(x, y, z, current);
             if (sch != null) {
-<<<<<<< HEAD
-=======
                 // Add check for carpet and weighted pressure plate placement
                 if (sch.getBlock() instanceof CarpetBlock ||
                         sch.getBlock() instanceof WeightedPressurePlateBlock) {
@@ -1299,8 +1297,6 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                         }
                     }
                 }
-
->>>>>>> pr/1
                 if (sch.getBlock() instanceof AirBlock) {
                     return placeBlockCost * Baritone.settings().placeIncorrectBlockPenaltyMultiplier.value;
                 }
