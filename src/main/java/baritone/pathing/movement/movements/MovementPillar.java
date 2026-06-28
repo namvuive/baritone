@@ -68,6 +68,14 @@ public class MovementPillar extends Movement {
                 return COST_INF; // can't pillar up from a bottom slab onto a non ladder
             }
         }
+        // CARPET FIX 1
+        if (from instanceof CarpetBlock) {
+            return COST_INF;
+        }
+        if (from instanceof PressurePlateBlock) {
+            return COST_INF;
+        }
+
         if (from == Blocks.VINE && !hasAgainst(context, x, y, z)) { // TODO this vine can't be climbed, but we could place a pillar still since vines are replacable, no? perhaps the pillar jump would be impossible because of the slowdown actually.
             return COST_INF;
         }
