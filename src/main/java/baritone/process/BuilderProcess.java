@@ -259,18 +259,49 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         return schematic != null;
     }
 
-    public BlockState placeAt(int x, int y, int z, BlockState current) {
+    public BlockState placeAt(int x, int y, int z, BlockState current, boolean forPathing) {
         if (!isActive()) {
             return null;
         }
         if (!schematic.inSchematic(x - origin.getX(), y - origin.getY(), z - origin.getZ(), current)) {
             return null;
         }
+        if (!forPathing) {
+            if (Baritone.settings().strictLayer.value) {
+                int layerType = Baritone.settings().layerType.value;
+                int val;
+                if (layerType == 2) {
+                    val = x - origin.getX();
+                } else if (layerType == 3) {
+                    val = z - origin.getZ();
+                } else {
+                    val = y - origin.getY();
+                }
+                int layerHeight = Baritone.settings().layerHeight.value;
+                int currentLayerIndex = val / layerHeight;
+                int width = Baritone.settings().strictLayerWidth.value;
+                if (Math.abs(currentLayerIndex - this.layer) > width) {
+                    return null;
+                }
+            }
+
+            // Enforce staircase build order if mode is active
+            if (Baritone.settings().staircaseMapArtMode.value) {
+                if (!isNextInStaircase(new BlockPos(x, y, z), this.layer)) {
+                    return null;
+                }
+            }
+        }
+
         BlockState state = schematic.desiredState(x - origin.getX(), y - origin.getY(), z - origin.getZ(), current, this.approxPlaceable);
         if (state.getBlock() instanceof AirBlock) {
             return null;
         }
         return state;
+    }
+
+    public BlockState placeAt(int x, int y, int z, BlockState current) {
+        return placeAt(x, y, z, current, false);
     }
 
     private Optional<Tuple<BetterBlockPos, Rotation>> toBreakNearPlayer(BuilderCalculationContext bcc) {
@@ -288,6 +319,23 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                     BlockState desired = bcc.getSchematic(x, y, z, bcc.bsi.get0(x, y, z));
                     if (desired == null) {
                         continue; // irrelevant
+                    }
+                    if (Baritone.settings().strictLayer.value) {
+                        int layerType = Baritone.settings().layerType.value;
+                        int val;
+                        if (layerType == 2) {
+                            val = x - origin.getX();
+                        } else if (layerType == 3) {
+                            val = z - origin.getZ();
+                        } else {
+                            val = y - origin.getY();
+                        }
+                        int layerHeight = Baritone.settings().layerHeight.value;
+                        int currentLayerIndex = val / layerHeight;
+                        int width = Baritone.settings().strictLayerWidth.value;
+                        if (Math.abs(currentLayerIndex - this.layer) > width) {
+                            continue;
+                        }
                     }
                     BlockState curr = bcc.bsi.get0(x, y, z);
                     if (!(curr.getBlock() instanceof AirBlock) && !(curr.getBlock() == Blocks.WATER || curr.getBlock() == Blocks.LAVA) && !valid(curr, desired, false)) {
@@ -329,6 +377,23 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                     BlockState desired = bcc.getSchematic(x, y, z, bcc.bsi.get0(x, y, z));
                     if (desired == null) {
                         continue; // irrelevant
+                    }
+                    if (Baritone.settings().strictLayer.value) {
+                        int layerType = Baritone.settings().layerType.value;
+                        int val;
+                        if (layerType == 2) {
+                            val = x - origin.getX();
+                        } else if (layerType == 3) {
+                            val = z - origin.getZ();
+                        } else {
+                            val = y - origin.getY();
+                        }
+                        int layerHeight = Baritone.settings().layerHeight.value;
+                        int currentLayerIndex = val / layerHeight;
+                        int width = Baritone.settings().strictLayerWidth.value;
+                        if (Math.abs(currentLayerIndex - this.layer) > width) {
+                            continue;
+                        }
                     }
                     BlockState curr = bcc.bsi.get0(x, y, z);
                     if (MovementHelper.isReplaceable(x, y, z, curr, bcc.bsi) && !valid(curr, desired, false)) {
@@ -495,10 +560,10 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                 // custom staircase logic: minInclusive based on y coordinate of schematic
                 minInclusive = 0; // always build from bottom
                 maxInclusive = layer * layerHeight - 1;
-            } else if (Baritone.settings().layerOrder.value) { // top to bottom
+            } else if (Baritone.settings().layerOrder.value) { // reverse order
                 maxInclusive = totalLength - 1;
                 minInclusive = totalLength - layer * layerHeight;
-            } else {
+            } else { // low to high (default)
                 maxInclusive = layer * layerHeight - 1;
                 minInclusive = 0;
             }
@@ -1229,5 +1294,101 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                 return 1; // why not lol
             }
         }
+    }
+
+    private List<Set<BlockPos>> getConnectedComponents(int layer) {
+        List<Set<BlockPos>> components = new ArrayList<>();
+        Set<BlockPos> visited = new HashSet<>();
+
+        // Get all blocks in the current layer based on the current layerType
+        Set<BlockPos> allBlocksInLayer = getAllBlocksInLayer(layer);
+
+        for (BlockPos pos : allBlocksInLayer) {
+            if (!visited.contains(pos)) {
+                Set<BlockPos> component = new HashSet<>();
+                Queue<BlockPos> queue = new LinkedList<>();
+                queue.add(pos);
+                visited.add(pos);
+
+                while (!queue.isEmpty()) {
+                    BlockPos current = queue.poll();
+                    component.add(current);
+
+                    // Check horizontal neighbors (N, S, E, W) to define connectivity
+                    for (Direction dir : Direction.Plane.HORIZONTAL) {
+                        BlockPos neighbor = current.relative(dir);
+                        if (allBlocksInLayer.contains(neighbor) && !visited.contains(neighbor)) {
+                            visited.add(neighbor);
+                            queue.add(neighbor);
+                        }
+                    }
+                }
+                components.add(component);
+            }
+        }
+        return components;
+    }
+
+    private List<Set<BlockPos>> currentLayerComponents;
+    private int lastLayerCalculated = -1;
+
+    private List<Set<BlockPos>> getCachedComponents(int layer) {
+        if (layer != lastLayerCalculated) {
+            currentLayerComponents = getConnectedComponents(layer);
+            lastLayerCalculated = layer;
+        }
+        return currentLayerComponents;
+    }
+
+    private boolean isNextInStaircase(BlockPos pos, int layer) {
+        List<Set<BlockPos>> components = getCachedComponents(layer);
+        for (Set<BlockPos> component : components) {
+            if (component.contains(pos)) {
+                // Check if any block belonging to this component has a lower Y
+                // AND is not yet placed in the world.
+                for (BlockPos p : component) {
+                    if (p.getY() < pos.getY()) {
+                        // Check if the block at p is AIR in the world
+                        // If it is AIR, it means it's not placed yet, so we cannot place the current block
+                        if (ctx.world().getBlockState(p).isAir()) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+        return true;
+    }
+
+    private Set<BlockPos> getAllBlocksInLayer(int layer) {
+        Set<BlockPos> blocks = new HashSet<>();
+        int layerType = Baritone.settings().layerType.value;
+        int layerHeight = Baritone.settings().layerHeight.value;
+        int start = layer * layerHeight;
+        int end = start + layerHeight;
+
+        for (int x = 0; x < schematic.widthX(); x++) {
+            for (int y = 0; y < schematic.heightY(); y++) {
+                for (int z = 0; z < schematic.lengthZ(); z++) {
+                    int val;
+                    if (layerType == 2) {
+                        val = x;
+                    } else if (layerType == 3) {
+                        val = z;
+                    } else {
+                        val = y;
+                    }
+
+                    if (val >= start && val < end) {
+                        BlockPos pos = new BlockPos(x + origin.getX(), y + origin.getY(), z + origin.getZ());
+                        if (schematic.desiredState(x, y, z, null, null).getBlock() != Blocks.AIR) {
+                            blocks.add(pos);
+                        }
+                    }
+                }
+            }
+        }
+        return blocks;
     }
 }

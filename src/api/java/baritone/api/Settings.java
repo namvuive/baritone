@@ -999,6 +999,16 @@ public final class Settings {
     public final Setting<Boolean> extendCacheOnThreshold = new Setting<>(false);
 
     /**
+     * If true, only building and breaking blocks in the current layer is accepted.
+     */
+    public final Setting<Boolean> strictLayer = new Setting<>(false);
+
+    /**
+     * If strictLayer is true, this determines the range of nearby layers also accepted.
+     */
+    public final Setting<Integer> strictLayerWidth = new Setting<>(0);
+
+    /**
      * MapArtMode but instead of just top block, builds in a staircase pattern.
      * Requires LayerType 2 or 3.
      */
