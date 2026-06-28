@@ -1241,10 +1241,12 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                     // If not, increase the cost significantly to de-prioritize it.
                     if (Baritone.settings().staircaseMapArtMode.value) {
                         if (!isNextInStaircase(new BlockPos(x, y, z), BuilderProcess.this.layer)) {
-                            return 1000.0; // High cost, but not impossible
+                            // We return a cost that is higher than any reasonable distance cost
+                            // to force the pathfinder to prioritize "next" blocks over proximity.
+                            return 10000.0;
                         }
                     }
-                    return 0; 
+                    return 0; // Highest priority for next block in staircase
                 }
                 if (!hasThrowaway) {
                     return COST_INF;
