@@ -1015,6 +1015,12 @@ public final class Settings {
     public final Setting<Boolean> staircaseMapArtMode = new Setting<>(false);
 
     /**
+     * Penalty cost added to blocks that are not the next in line for staircaseMapArtMode.
+     * Higher values force stricter build order adherence at the cost of potential pathfinding stalls.
+     */
+    public final Setting<Double> staircaseMapArtModePriorityCost = new Setting<>(10000.0);
+
+    /**
      * 1: BuildInLayers will build in Y layers
      * 2: BuildInLayers will build in X layers
      * 3: BuildInLayers will build in Z layers
