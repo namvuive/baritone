@@ -259,37 +259,35 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         return schematic != null;
     }
 
-    public BlockState placeAt(int x, int y, int z, BlockState current, boolean forPathing) {
+    public BlockState placeAt(int x, int y, int z, BlockState current) {
         if (!isActive()) {
             return null;
         }
         if (!schematic.inSchematic(x - origin.getX(), y - origin.getY(), z - origin.getZ(), current)) {
             return null;
         }
-        if (!forPathing) {
-            if (Baritone.settings().strictLayer.value) {
-                int layerType = Baritone.settings().layerType.value;
-                int val;
-                if (layerType == 2) {
-                    val = x - origin.getX();
-                } else if (layerType == 3) {
-                    val = z - origin.getZ();
-                } else {
-                    val = y - origin.getY();
-                }
-                int layerHeight = Baritone.settings().layerHeight.value;
-                int currentLayerIndex = val / layerHeight;
-                int width = Baritone.settings().strictLayerWidth.value;
-                if (Math.abs(currentLayerIndex - this.layer) > width) {
-                    return null;
-                }
+        if (Baritone.settings().strictLayer.value) {
+            int layerType = Baritone.settings().layerType.value;
+            int val;
+            if (layerType == 2) {
+                val = x - origin.getX();
+            } else if (layerType == 3) {
+                val = z - origin.getZ();
+            } else {
+                val = y - origin.getY();
             }
+            int layerHeight = Baritone.settings().layerHeight.value;
+            int currentLayerIndex = val / layerHeight;
+            int width = Baritone.settings().strictLayerWidth.value;
+            if (Math.abs(currentLayerIndex - this.layer) > width) {
+                return null;
+            }
+        }
 
-            // Enforce staircase build order if mode is active
-            if (Baritone.settings().staircaseMapArtMode.value) {
-                if (!isNextInStaircase(new BlockPos(x, y, z), this.layer)) {
-                    return null;
-                }
+        // Enforce staircase build order if mode is active
+        if (Baritone.settings().staircaseMapArtMode.value) {
+            if (!isNextInStaircase(new BlockPos(x, y, z), this.layer)) {
+                return null;
             }
         }
 
@@ -298,10 +296,6 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             return null;
         }
         return state;
-    }
-
-    public BlockState placeAt(int x, int y, int z, BlockState current) {
-        return placeAt(x, y, z, current, false);
     }
 
     private Optional<Tuple<BetterBlockPos, Rotation>> toBreakNearPlayer(BuilderCalculationContext bcc) {
@@ -1233,28 +1227,28 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
 
         @Override
         public double costOfPlacingAt(int x, int y, int z, BlockState current) {
-            if (isPossiblyProtected(x, y, z) || !worldBorder.canPlaceAt(x, z)) { // make calculation fail properly if we can't build
+            if (isPossiblyProtected(x, y, z) || !worldBorder.canPlaceAt(x, z)) {
                 return COST_INF;
             }
             BlockState sch = getSchematic(x, y, z, current);
             if (sch != null) {
-                // TODO this can return true even when allowPlace is off.... is that an issue?
                 if (sch.getBlock() instanceof AirBlock) {
-                    // we want this to be air, but they're asking if they can place here
-                    // this won't be a schematic block, this will be a throwaway
-                    return placeBlockCost * Baritone.settings().placeIncorrectBlockPenaltyMultiplier.value; // we're going to have to break it eventually
+                    return placeBlockCost * Baritone.settings().placeIncorrectBlockPenaltyMultiplier.value;
                 }
                 if (placeable.contains(sch)) {
-                    return 0; // thats right we gonna make it FREE to place a block where it should go in a structure
-                    // no place block penalty at all 😎
-                    // i'm such an idiot that i just tried to copy and paste the epic gamer moment emoji too
-                    // get added to unicode when?
+                    // Staircase priority logic:
+                    // If staircase mode is active, check if this block is the next in line.
+                    // If not, increase the cost significantly to de-prioritize it.
+                    if (Baritone.settings().staircaseMapArtMode.value) {
+                        if (!isNextInStaircase(new BlockPos(x, y, z), BuilderProcess.this.layer)) {
+                            return 1000.0; // High cost, but not impossible
+                        }
+                    }
+                    return 0; 
                 }
                 if (!hasThrowaway) {
                     return COST_INF;
                 }
-                // we want it to be something that we don't have
-                // even more of a pain to place something wrong
                 return placeBlockCost * 1.5 * Baritone.settings().placeIncorrectBlockPenaltyMultiplier.value;
             } else {
                 if (hasThrowaway) {
