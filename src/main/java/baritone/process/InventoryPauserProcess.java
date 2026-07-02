@@ -50,6 +50,9 @@ public class InventoryPauserProcess extends BaritoneProcessHelper {
 
     public boolean stationaryForInventoryMove() {
         pauseRequestedLastTick = true;
+        if (Baritone.settings().invMoveIgnoreSafeToCancel.value) {
+            return ticksOfStationary > 1;
+        }
         return safeToCancelLastTick && ticksOfStationary > 1;
     }
 

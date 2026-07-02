@@ -25,6 +25,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.inventory.ClickType;
@@ -48,6 +49,8 @@ public final class InventoryBehavior extends Behavior implements Helper {
 
     int ticksSinceLastInventoryMove;
     int[] lastTickRequestedMove; // not everything asks every tick, so remember the request while coming to a halt
+    int pendingCloseContainerId = -1;
+    int pendingCloseTicks;
 
     public InventoryBehavior(Baritone baritone) {
         super(baritone);
@@ -76,6 +79,13 @@ public final class InventoryBehavior extends Behavior implements Helper {
         if (lastTickRequestedMove != null) {
             logDebug("Remembering to move " + lastTickRequestedMove[0] + " " + lastTickRequestedMove[1] + " from a previous tick");
             requestSwapWithHotBar(lastTickRequestedMove[0], lastTickRequestedMove[1]);
+        }
+        if (pendingCloseContainerId >= 0) {
+            pendingCloseTicks--;
+            if (pendingCloseTicks <= 0) {
+                ctx.player().connection.getConnection().send(new ServerboundContainerClosePacket(pendingCloseContainerId));
+                pendingCloseContainerId = -1;
+            }
         }
     }
 
@@ -121,6 +131,10 @@ public final class InventoryBehavior extends Behavior implements Helper {
             return false;
         }
         ctx.playerController().windowClick(ctx.player().inventoryMenu.containerId, inInventory < 9 ? inInventory + 36 : inInventory, inHotbar, ClickType.SWAP, ctx.player());
+        if (Baritone.settings().inventoryMoveAntiCheatCompatible.value) {
+            pendingCloseContainerId = ctx.player().inventoryMenu.containerId;
+            pendingCloseTicks = Baritone.settings().inventoryMoveAntiCheatCloseDelay.value;
+        }
         ticksSinceLastInventoryMove = 0;
         lastTickRequestedMove = null;
         return true;

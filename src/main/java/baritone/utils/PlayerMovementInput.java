@@ -33,7 +33,7 @@ public class PlayerMovementInput extends ClientInput {
     public void tick() {
         float leftImpulse = 0.0F;
         float forwardImpulse = 0.0F;
-        boolean jumping = handler.isInputForcedDown(Input.JUMP); // oppa gangnam style
+        boolean jumping = handler.isInputForcedDown(Input.JUMP) || handler.isPlayerJumping(); // oppa gangnam style
 
         boolean up = handler.isInputForcedDown(Input.MOVE_FORWARD);
         if (up) {

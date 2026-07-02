@@ -63,6 +63,12 @@ public final class InputOverrideHandler extends Behavior implements IInputOverri
         return input == null ? false : this.inputForceStateMap.getOrDefault(input, false);
     }
 
+    public boolean isPlayerJumping() {
+        return Baritone.settings().allowJumpWhenBaritone.value
+                && !this.inputForceStateMap.containsKey(Input.JUMP)
+                && ctx.minecraft().options.keyJump.isDown();
+    }
+
     /**
      * Sets whether or not the specified {@link Input} is being forced down.
      *

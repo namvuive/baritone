@@ -1578,6 +1578,26 @@ public final class Settings {
     public final Setting<Double> inventoryMoveMotionThreshold = new Setting<>(0.00001);
 
     /**
+     * If true, sends a close inventory packet after each window click to be compatible with anti-cheat plugins
+     */
+    public final Setting<Boolean> inventoryMoveAntiCheatCompatible = new Setting<>(false);
+
+    /**
+     * The delay in ticks between the window click and sending the close inventory packet
+     */
+    public final Setting<Integer> inventoryMoveAntiCheatCloseDelay = new Setting<>(1);
+
+    /**
+     * If true, allows the player to jump while Baritone is controlling movement
+     */
+    public final Setting<Boolean> allowJumpWhenBaritone = new Setting<>(false);
+
+    /**
+     * If true, ignores the safeToCancel check when determining if the player is stationary enough for inventory moves
+     */
+    public final Setting<Boolean> invMoveIgnoreSafeToCancel = new Setting<>(false);
+
+    /**
      * A map of lowercase setting field names to their respective setting
      */
     public final Map<String, Setting<?>> byLowerName;
