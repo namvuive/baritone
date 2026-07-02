@@ -45,7 +45,7 @@ public class InventoryPauserProcess extends BaritoneProcessHelper {
     }
 
     private boolean stationaryNow() {
-        return motion() < 0.1;
+        return motion() < Baritone.settings().inventoryMoveMotionThreshold.value;
     }
 
     public boolean stationaryForInventoryMove() {

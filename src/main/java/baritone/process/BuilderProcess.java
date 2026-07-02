@@ -400,7 +400,10 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                         }
                     }
                     BlockState curr = bcc.bsi.get0(x, y, z);
-                    if (!(bcc.bsi.get0(x, y + 1, z).getBlock() instanceof AirBlock)) {
+                    BlockState above = bcc.bsi.get0(x, y + 1, z);
+                    if (!(above.getBlock() instanceof AirBlock)
+                            && !(above.getBlock() instanceof CarpetBlock)
+                            && !(above.getBlock() instanceof PressurePlateBlock)) {
                         continue;
                     }
                     if (MovementHelper.isReplaceable(x, y, z, curr, bcc.bsi) && !valid(curr, desired, false)) {
@@ -834,7 +837,10 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         incorrectPositions.forEach(pos -> {
             BlockState state = bcc.bsi.get0(pos);
             if (state.getBlock() instanceof AirBlock) {
-                if (!(bcc.bsi.get0(pos.x, pos.y + 1, pos.z).getBlock() instanceof AirBlock)) {
+                BlockState above = bcc.bsi.get0(pos.x, pos.y + 1, pos.z);
+                if (!(above.getBlock() instanceof AirBlock)
+                        && !(above.getBlock() instanceof CarpetBlock)
+                        && !(above.getBlock() instanceof PressurePlateBlock)) {
                     return; // Skip this position
                 }
                 BlockState desired = bcc.getSchematic(pos.x, pos.y, pos.z, state);

@@ -21,7 +21,7 @@ import baritone.api.schematic.IStaticSchematic;
 import baritone.api.schematic.MaskSchematic;
 import java.util.OptionalInt;
 import java.util.function.Predicate;
-import net.minecraft.world.level.block.AirBlock;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class MapArtSchematic extends MaskSchematic {
@@ -47,7 +47,14 @@ public class MapArtSchematic extends MaskSchematic {
                 BlockState[] column = schematic.getColumn(x, z);
                 OptionalInt lowestBlockY = lastIndexMatching(column, state -> !(state.getBlock() instanceof AirBlock));
                 if (lowestBlockY.isPresent()) {
-                    heightMap[x][z] = lowestBlockY.getAsInt();
+                    int topY = lowestBlockY.getAsInt();
+                    if (topY > 0) {
+                        BlockState topState = column[topY];
+                        if (needsSupportBelow(topState) && !(column[topY - 1].getBlock() instanceof AirBlock)) {
+                            topY--;
+                        }
+                    }
+                    heightMap[x][z] = topY;
                 } else {
                     missingColumns++;
                     heightMap[x][z] = Integer.MAX_VALUE;
@@ -58,6 +65,12 @@ public class MapArtSchematic extends MaskSchematic {
             System.out.println(missingColumns + " columns had no block despite being in a map art, letting them be whatever");
         }
         return heightMap;
+    }
+
+    private static boolean needsSupportBelow(BlockState state) {
+        return state.getBlock() instanceof CarpetBlock
+                || state.getBlock() instanceof PressurePlateBlock
+                || state.getBlock() instanceof WeightedPressurePlateBlock;
     }
 
     private static <T> OptionalInt lastIndexMatching(T[] arr, Predicate<? super T> predicate) {

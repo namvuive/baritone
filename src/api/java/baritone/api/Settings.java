@@ -1573,6 +1573,11 @@ public final class Settings {
     public final Setting<Boolean> elytraChatSpam = new Setting<>(false);
 
     /**
+     * The minimum motion threshold for considering the player stationary enough for inventory moves
+     */
+    public final Setting<Double> inventoryMoveMotionThreshold = new Setting<>(0.00001);
+
+    /**
      * A map of lowercase setting field names to their respective setting
      */
     public final Map<String, Setting<?>> byLowerName;
