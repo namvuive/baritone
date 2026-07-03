@@ -31,6 +31,11 @@ public class PlayerMovementInput extends ClientInput {
 
     @Override
     public void tick() {
+        if (handler.baritone.getInventoryBehavior().isAntiCheatActive()) {
+            this.moveVector = Vec2.ZERO;
+            this.keyPresses = new net.minecraft.world.entity.player.Input(false, false, false, false, false, false, false);
+            return;
+        }
         float leftImpulse = 0.0F;
         float forwardImpulse = 0.0F;
         boolean jumping = handler.isInputForcedDown(Input.JUMP) || handler.isPlayerJumping(); // oppa gangnam style

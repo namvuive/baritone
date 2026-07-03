@@ -1588,6 +1588,11 @@ public final class Settings {
     public final Setting<Integer> inventoryMoveAntiCheatCloseDelay = new Setting<>(1);
 
     /**
+     * The delay in ticks before performing the window click after opening inventory
+     */
+    public final Setting<Integer> inventoryMoveAntiCheatOpenDelay = new Setting<>(1);
+
+    /**
      * If true, allows the player to jump while Baritone is controlling movement
      */
     public final Setting<Boolean> allowJumpWhenBaritone = new Setting<>(false);

@@ -21,11 +21,12 @@ import baritone.Baritone;
 import baritone.api.event.events.TickEvent;
 import baritone.api.utils.Helper;
 import baritone.utils.ToolSet;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.inventory.ClickType;
@@ -49,8 +50,15 @@ public final class InventoryBehavior extends Behavior implements Helper {
 
     int ticksSinceLastInventoryMove;
     int[] lastTickRequestedMove; // not everything asks every tick, so remember the request while coming to a halt
-    int pendingCloseContainerId = -1;
-    int pendingCloseTicks;
+    private int antiCheatPhase; // 0=idle, 1=waiting to click, 2=waiting to close
+    private int antiCheatTicks;
+    private int antiCheatInvSlot;
+    private int antiCheatHotbarSlot;
+    private int antiCheatPostSequenceCooldown; // ticks to wait before starting a new sequence
+
+    public boolean isAntiCheatActive() {
+        return Baritone.settings().inventoryMoveAntiCheatCompatible.value && antiCheatPhase != 0;
+    }
 
     public InventoryBehavior(Baritone baritone) {
         super(baritone);
@@ -65,11 +73,40 @@ public final class InventoryBehavior extends Behavior implements Helper {
             return;
         }
         if (ctx.player().containerMenu != ctx.player().inventoryMenu) {
-            // we have a crafting table or a chest or something open
             return;
         }
         ticksSinceLastInventoryMove++;
-        if (firstValidThrowaway() >= 9) { // aka there are none on the hotbar, but there are some in main inventory
+        if (antiCheatPostSequenceCooldown > 0) {
+            antiCheatPostSequenceCooldown--;
+        }
+        if (Baritone.settings().inventoryMoveAntiCheatCompatible.value && antiCheatPhase != 0) {
+            antiCheatTicks--;
+            if (antiCheatTicks <= 0) {
+                if (antiCheatPhase == 1) {
+                    ctx.playerController().windowClick(ctx.player().inventoryMenu.containerId,
+                            antiCheatInvSlot < 9 ? antiCheatInvSlot + 36 : antiCheatInvSlot,
+                            antiCheatHotbarSlot, ClickType.SWAP, ctx.player());
+                    ticksSinceLastInventoryMove = 0;
+                    int closeDelay = Baritone.settings().inventoryMoveAntiCheatCloseDelay.value;
+                    if (closeDelay > 0) {
+                        antiCheatPhase = 2;
+                        antiCheatTicks = closeDelay;
+                    } else {
+                        Minecraft.getInstance().setScreen(null);
+                        antiCheatPhase = 0;
+                        lastTickRequestedMove = null;
+                        antiCheatPostSequenceCooldown = 5;
+                    }
+                } else if (antiCheatPhase == 2) {
+                    Minecraft.getInstance().setScreen(null);
+                    antiCheatPhase = 0;
+                    lastTickRequestedMove = null;
+                    antiCheatPostSequenceCooldown = 5;
+                }
+            }
+            return;
+        }
+        if (firstValidThrowaway() >= 9) {
             requestSwapWithHotBar(firstValidThrowaway(), 8);
         }
         int pick = bestToolAgainst(Blocks.STONE);
@@ -79,13 +116,6 @@ public final class InventoryBehavior extends Behavior implements Helper {
         if (lastTickRequestedMove != null) {
             logDebug("Remembering to move " + lastTickRequestedMove[0] + " " + lastTickRequestedMove[1] + " from a previous tick");
             requestSwapWithHotBar(lastTickRequestedMove[0], lastTickRequestedMove[1]);
-        }
-        if (pendingCloseContainerId >= 0) {
-            pendingCloseTicks--;
-            if (pendingCloseTicks <= 0) {
-                ctx.player().connection.getConnection().send(new ServerboundContainerClosePacket(pendingCloseContainerId));
-                pendingCloseContainerId = -1;
-            }
         }
     }
 
@@ -130,11 +160,17 @@ public final class InventoryBehavior extends Behavior implements Helper {
             logDebug("Inventory move requested but delaying until stationary");
             return false;
         }
-        ctx.playerController().windowClick(ctx.player().inventoryMenu.containerId, inInventory < 9 ? inInventory + 36 : inInventory, inHotbar, ClickType.SWAP, ctx.player());
         if (Baritone.settings().inventoryMoveAntiCheatCompatible.value) {
-            pendingCloseContainerId = ctx.player().inventoryMenu.containerId;
-            pendingCloseTicks = Baritone.settings().inventoryMoveAntiCheatCloseDelay.value;
+            if (antiCheatPhase == 0 && antiCheatPostSequenceCooldown <= 0) {
+                Minecraft.getInstance().setScreen(new InventoryScreen(ctx.player()));
+                antiCheatPhase = 1;
+                antiCheatTicks = Baritone.settings().inventoryMoveAntiCheatOpenDelay.value;
+                antiCheatInvSlot = inInventory;
+                antiCheatHotbarSlot = inHotbar;
+            }
+            return false;
         }
+        ctx.playerController().windowClick(ctx.player().inventoryMenu.containerId, inInventory < 9 ? inInventory + 36 : inInventory, inHotbar, ClickType.SWAP, ctx.player());
         ticksSinceLastInventoryMove = 0;
         lastTickRequestedMove = null;
         return true;
