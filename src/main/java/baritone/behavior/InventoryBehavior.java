@@ -20,6 +20,7 @@ package baritone.behavior;
 import baritone.Baritone;
 import baritone.api.event.events.TickEvent;
 import baritone.api.utils.Helper;
+import baritone.api.utils.input.Input;
 import baritone.utils.ToolSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -79,6 +80,15 @@ public final class InventoryBehavior extends Behavior implements Helper {
         if (antiCheatPostSequenceCooldown > 0) {
             antiCheatPostSequenceCooldown--;
         }
+        // Keep sprint and movement stopped during anti-cheat sequence AND cooldown to bypass MultiActionsC/D
+        if (Baritone.settings().inventoryMoveAntiCheatCompatible.value && (antiCheatPhase != 0 || antiCheatPostSequenceCooldown > 0)) {
+            ctx.player().setSprinting(false);
+            baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
+            baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
+            baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_LEFT, false);
+            baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_RIGHT, false);
+            baritone.getInputOverrideHandler().setInputForceState(Input.SPRINT, false);
+        }
         if (Baritone.settings().inventoryMoveAntiCheatCompatible.value && antiCheatPhase != 0) {
             antiCheatTicks--;
             if (antiCheatTicks <= 0) {
@@ -92,13 +102,11 @@ public final class InventoryBehavior extends Behavior implements Helper {
                         antiCheatPhase = 2;
                         antiCheatTicks = closeDelay;
                     } else {
-                        Minecraft.getInstance().setScreen(null);
                         antiCheatPhase = 0;
                         lastTickRequestedMove = null;
                         antiCheatPostSequenceCooldown = 5;
                     }
                 } else if (antiCheatPhase == 2) {
-                    Minecraft.getInstance().setScreen(null);
                     antiCheatPhase = 0;
                     lastTickRequestedMove = null;
                     antiCheatPostSequenceCooldown = 5;
@@ -120,6 +128,9 @@ public final class InventoryBehavior extends Behavior implements Helper {
     }
 
     public boolean attemptToPutOnHotbar(int inMainInvy, Predicate<Integer> disallowedHotbar) {
+        if (Baritone.settings().inventoryMoveAntiCheatCompatible.value && antiCheatPostSequenceCooldown > 0) {
+            return false; // keep builder paused during cooldown to prevent pathing from resuming
+        }
         OptionalInt destination = getTempHotbarSlot(disallowedHotbar);
         if (destination.isPresent()) {
             if (!requestSwapWithHotBar(inMainInvy, destination.getAsInt())) {
@@ -162,7 +173,14 @@ public final class InventoryBehavior extends Behavior implements Helper {
         }
         if (Baritone.settings().inventoryMoveAntiCheatCompatible.value) {
             if (antiCheatPhase == 0 && antiCheatPostSequenceCooldown <= 0) {
-                Minecraft.getInstance().setScreen(new InventoryScreen(ctx.player()));
+                // Stop sprint and movement before the anti-cheat sequence to bypass MultiActionsC
+                ctx.player().setSprinting(false);
+                baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
+                baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
+                baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_LEFT, false);
+                baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_RIGHT, false);
+                baritone.getInputOverrideHandler().setInputForceState(Input.SPRINT, false);
+
                 antiCheatPhase = 1;
                 antiCheatTicks = Baritone.settings().inventoryMoveAntiCheatOpenDelay.value;
                 antiCheatInvSlot = inInventory;
