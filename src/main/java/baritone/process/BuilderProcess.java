@@ -1155,6 +1155,9 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (first.getBlock() != second.getBlock()) {
             return false;
         }
+        if (first.getBlock() instanceof PressurePlateBlock || first.getBlock() instanceof WeightedPressurePlateBlock) {
+            return true;
+        }
         boolean ignoreDirection = Baritone.settings().buildIgnoreDirection.value;
         List<String> ignoredProps = Baritone.settings().buildIgnoreProperties.value;
         if (!ignoreDirection && ignoredProps.isEmpty()) {
