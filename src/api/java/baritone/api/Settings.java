@@ -1051,6 +1051,11 @@ public final class Settings {
     public final Setting<Integer> startAtLayer = new Setting<>(0);
 
     /**
+     * Only build a specific layer and then finish. -1 to disable.
+     */
+    public final Setting<Integer> buildOnlyLayer = new Setting<>(-1);
+
+    /**
      * If a layer is unable to be constructed, just skip it.
      */
     public final Setting<Boolean> skipFailedLayers = new Setting<>(false);

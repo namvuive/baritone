@@ -140,7 +140,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         }
         this.origin = new Vec3i(x, y, z);
         this.paused = false;
-        this.layer = Baritone.settings().startAtLayer.value;
+        this.layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Baritone.settings().startAtLayer.value;
         this.stopAtHeight = schematic.heightY();
         if (Baritone.settings().buildOnlySelection.value && buildingSelectionSchematic) {  // currently redundant but safer maybe
             if (baritone.getSelectionManager().getSelections().length == 0) {
@@ -545,7 +545,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (paused) {
             return new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL);
         }
-        if (Baritone.settings().buildInLayers.value) {
+        if (Baritone.settings().buildInLayers.value || Baritone.settings().buildOnlyLayer.value != -1) {
             if (realSchematic == null) {
                 realSchematic = schematic;
             }
@@ -629,7 +629,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             } else { // Y
                 totalLength = realSchematic.heightY();
             }
-            if (Baritone.settings().buildInLayers.value && layer * Baritone.settings().layerHeight.value < totalLength) {
+            if (Baritone.settings().buildOnlyLayer.value == -1 && Baritone.settings().buildInLayers.value && layer * Baritone.settings().layerHeight.value < totalLength) {
                 logDirect("Starting layer " + layer);
                 layer++;
                 return onTick(calcFailed, isSafeToCancel, recursions + 1);
@@ -1114,7 +1114,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         name = null;
         schematic = null;
         realSchematic = null;
-        layer = Baritone.settings().startAtLayer.value;
+        layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Baritone.settings().startAtLayer.value;
         numRepeats = 0;
         paused = false;
         observedCompleted = null;
