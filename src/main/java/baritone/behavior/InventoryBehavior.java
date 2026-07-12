@@ -86,7 +86,9 @@ public final class InventoryBehavior extends Behavior implements Helper {
         }
         // Keep sprint and movement stopped during anti-cheat sequence AND cooldown to bypass MultiActionsC/D
         if (Baritone.settings().inventoryMoveAntiCheatCompatible.value && (antiCheatPhase != 0 || antiCheatPostSequenceCooldown > 0)) {
-            ctx.player().setSprinting(false);
+            if (ctx.player().isSprinting()) {
+                ctx.player().setSprinting(false);
+            }
             baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
             baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
             baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_LEFT, false);
@@ -181,7 +183,9 @@ public final class InventoryBehavior extends Behavior implements Helper {
             if (antiCheatPhase == 0 && antiCheatPostSequenceCooldown <= 0) {
                 KeyMapping.click(mc.options.keyInventory.getDefaultKey());
                 // Stop sprint and movement before the anti-cheat sequence to bypass MultiActionsC
-                ctx.player().setSprinting(false);
+                if (ctx.player().isSprinting()) {
+                    ctx.player().setSprinting(false);
+                }
                 baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
                 baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
                 baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_LEFT, false);
@@ -274,7 +278,7 @@ public final class InventoryBehavior extends Behavior implements Helper {
             // since this function is never called during cost calculation, we don't need to migrate
             // acceptableThrowawayItems to the CalculationContext
             if (desired.test(item)) {
-                if (select) {
+                if (select && p.getInventory().getSelectedSlot() != i) {
                     p.getInventory().setSelectedSlot(i);
                 }
                 return true;
@@ -289,7 +293,7 @@ public final class InventoryBehavior extends Behavior implements Helper {
             for (int i = 0; i < 9; i++) {
                 ItemStack item = inv.get(i);
                 if (item.isEmpty() || item.getItem().components().has(DataComponents.TOOL)) {
-                    if (select) {
+                    if (select && p.getInventory().getSelectedSlot() != i) {
                         p.getInventory().setSelectedSlot(i);
                     }
                     return true;
@@ -302,7 +306,9 @@ public final class InventoryBehavior extends Behavior implements Helper {
                 if (desired.test(inv.get(i))) {
                     if (select) {
                         requestSwapWithHotBar(i, 7);
-                        p.getInventory().setSelectedSlot(7);
+                        if (p.getInventory().getSelectedSlot() != 7) {
+                            p.getInventory().setSelectedSlot(7);
+                        }
                     }
                     return true;
                 }

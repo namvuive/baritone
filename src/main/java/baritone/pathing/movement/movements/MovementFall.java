@@ -102,7 +102,10 @@ public class MovementFall extends Movement {
             }
 
             if (ctx.player().position().y - dest.getY() < ctx.playerController().getBlockReachDistance() && !ctx.player().onGround()) {
-                ctx.player().getInventory().setSelectedSlot(ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_WATER));
+                int waterSlot = ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_WATER);
+                if (ctx.player().getInventory().getSelectedSlot() != waterSlot) {
+                    ctx.player().getInventory().setSelectedSlot(waterSlot);
+                }
 
                 targetRotation = new Rotation(toDest.getYaw(), 90.0F);
 
@@ -119,7 +122,10 @@ public class MovementFall extends Movement {
         if (playerFeet.equals(dest) && (ctx.player().position().y - playerFeet.getY() < 0.094 || isWater)) { // 0.094 because lilypads
             if (isWater) { // only match water, not flowing water (which we cannot pick up with a bucket)
                 if (Inventory.isHotbarSlot(ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_EMPTY))) {
-                    ctx.player().getInventory().setSelectedSlot(ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_EMPTY));
+                    int emptySlot = ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_EMPTY);
+                    if (ctx.player().getInventory().getSelectedSlot() != emptySlot) {
+                        ctx.player().getInventory().setSelectedSlot(emptySlot);
+                    }
                     if (ctx.player().getDeltaMovement().y >= 0) {
                         return state.setInput(Input.CLICK_RIGHT, true);
                     } else {

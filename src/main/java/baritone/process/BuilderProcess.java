@@ -48,6 +48,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -140,7 +141,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         }
         this.origin = new Vec3i(x, y, z);
         this.paused = false;
-        this.layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Baritone.settings().startAtLayer.value;
+        this.layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Math.max(0, Baritone.settings().startAtLayer.value + 1);
         this.stopAtHeight = schematic.heightY();
         if (Baritone.settings().buildOnlySelection.value && buildingSelectionSchematic) {  // currently redundant but safer maybe
             if (baritone.getSelectionManager().getSelections().length == 0) {
@@ -566,16 +567,28 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                 totalLength = realSchematic.heightY();
             }
 
-            if (Baritone.settings().staircaseMapArtMode.value) {
+            if (Baritone.settings().buildOnlyLayer.value != -1) {
+                // Single layer mode: build only the specified layer slice
+                if (Baritone.settings().layerOrder.value) { // reverse order
+                    maxInclusive = totalLength - 1 - layer * layerHeight;
+                    minInclusive = Math.max(0, maxInclusive - layerHeight + 1);
+                } else { // low to high (default)
+                    minInclusive = layer * layerHeight;
+                    maxInclusive = Math.min(totalLength - 1, minInclusive + layerHeight - 1);
+                }
+            } else if (Baritone.settings().staircaseMapArtMode.value) {
                 // custom staircase logic: minInclusive based on y coordinate of schematic
-                minInclusive = 0; // always build from bottom
+                int startOffset = Baritone.settings().startAtLayer.value * layerHeight;
+                minInclusive = startOffset;
                 maxInclusive = layer * layerHeight - 1;
             } else if (Baritone.settings().layerOrder.value) { // reverse order
-                maxInclusive = totalLength - 1;
+                int startOffset = Baritone.settings().startAtLayer.value * layerHeight;
+                maxInclusive = totalLength - 1 - startOffset;
                 minInclusive = totalLength - layer * layerHeight;
             } else { // low to high (default)
+                int startOffset = Baritone.settings().startAtLayer.value * layerHeight;
                 maxInclusive = layer * layerHeight - 1;
-                minInclusive = 0;
+                minInclusive = startOffset;
             }
 
             schematic = new ISchematic() {
@@ -682,10 +695,29 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (toPlace.isPresent() && isSafeToCancel && ctx.player().onGround() && ticks <= 0) {
             Rotation rot = toPlace.get().rot;
             baritone.getLookBehavior().updateTarget(rot, true);
-            ctx.player().getInventory().setSelectedSlot(toPlace.get().hotbarSelection);
+            if (ctx.player().getInventory().getSelectedSlot() != toPlace.get().hotbarSelection) {
+                ctx.player().getInventory().setSelectedSlot(toPlace.get().hotbarSelection);
+            }
             baritone.getInputOverrideHandler().setInputForceState(Input.SNEAK, true);
             if ((ctx.isLookingAt(toPlace.get().placeAgainst) && ((BlockHitResult) ctx.objectMouseOver()).getDirection().equals(toPlace.get().side)) || ctx.playerRotations().isReallyCloseTo(rot)) {
-                baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
+                // Direct call to avoid BadPacketsJ: CLICK_RIGHT via InputOverrideHandler fires on the next
+                // tick's TickEvent.IN, before LookBehavior applies the rotation for that tick. The USE_ITEM
+                // packet then carries the old rotation, while the following movement packet carries the new
+                // rotation, causing a mismatch. Calling here during PRE ensures the rotation is stable.
+                if (!ctx.player().isHandsBusy()) {
+                    HitResult hit = ctx.objectMouseOver();
+                    if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
+                        for (InteractionHand hand : InteractionHand.values()) {
+                            if (ctx.playerController().processRightClickBlock(ctx.player(), ctx.world(), hand, (BlockHitResult) hit) == InteractionResult.SUCCESS) {
+                                ctx.player().swing(hand);
+                                break;
+                            }
+                            if (!ctx.player().getItemInHand(hand).isEmpty() && ctx.playerController().processRightClick(ctx.player(), ctx.world(), hand) == InteractionResult.SUCCESS) {
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             return new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL);
         }
@@ -1114,7 +1146,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         name = null;
         schematic = null;
         realSchematic = null;
-        layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Baritone.settings().startAtLayer.value;
+        layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Math.max(0, Baritone.settings().startAtLayer.value + 1);
         numRepeats = 0;
         paused = false;
         observedCompleted = null;
