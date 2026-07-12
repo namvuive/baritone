@@ -19,6 +19,17 @@ allprojects {
     apply plugin: 'java'
     apply plugin: "xyz.wagyourtail.unimined"
     apply plugin: "maven-publish"
+    apply plugin: 'eclipse'
+
+    afterEvaluate {
+        eclipse {
+            classpath {
+                plusConfigurations += [configurations.minecraft, configurations.minecraftLibraries]
+                downloadSources = true
+                downloadJavadoc = true
+            }
+        }
+    }
 
     archivesBaseName = rootProject.archives_base_name
 
