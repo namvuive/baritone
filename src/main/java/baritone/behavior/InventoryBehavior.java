@@ -42,6 +42,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.input.KeyEvent;
+import org.lwjgl.glfw.GLFW;
+
 import java.util.ArrayList;
 import java.util.OptionalInt;
 import java.util.Random;
@@ -102,11 +106,13 @@ public final class InventoryBehavior extends Behavior implements Helper {
                         antiCheatPhase = 2;
                         antiCheatTicks = closeDelay;
                     } else {
+                        mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0));
                         antiCheatPhase = 0;
                         lastTickRequestedMove = null;
                         antiCheatPostSequenceCooldown = 5;
                     }
                 } else if (antiCheatPhase == 2) {
+                    mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0));
                     antiCheatPhase = 0;
                     lastTickRequestedMove = null;
                     antiCheatPostSequenceCooldown = 5;
@@ -173,6 +179,7 @@ public final class InventoryBehavior extends Behavior implements Helper {
         }
         if (Baritone.settings().inventoryMoveAntiCheatCompatible.value) {
             if (antiCheatPhase == 0 && antiCheatPostSequenceCooldown <= 0) {
+                KeyMapping.click(mc.options.keyInventory.getDefaultKey());
                 // Stop sprint and movement before the anti-cheat sequence to bypass MultiActionsC
                 ctx.player().setSprinting(false);
                 baritone.getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
