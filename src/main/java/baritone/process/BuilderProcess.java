@@ -116,7 +116,8 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             int layerType = Baritone.settings().layerType.value;
             if (layerType != 2 && layerType != 3) {
                 logDirect("StaircaseMapArtMode requires LayerType to be 2 or 3!");
-                this.stopAtHeight = 0;
+                onLostControl();
+                return;
             }
         }
         // TODO this preserves the old behavior, but maybe we should bake the setting value right here
