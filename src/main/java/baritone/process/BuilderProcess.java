@@ -142,6 +142,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         }
         this.origin = new Vec3i(x, y, z);
         this.paused = false;
+        this.layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Baritone.settings().startAtLayer.value;
         this.stopAtHeight = schematic.heightY();
         if (Baritone.settings().buildOnlySelection.value && buildingSelectionSchematic) {  // currently redundant but safer maybe
             if (baritone.getSelectionManager().getSelections().length == 0) {
@@ -566,12 +567,15 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             } else { // Y
                 totalLength = realSchematic.heightY();
             }
-
+            if (Baritone.settings().staircaseMapArtMode.value) {
                 // custom staircase logic: minInclusive based on y coordinate of schematic
                 maxInclusive = layer * layerHeight - 1;
+                minInclusive = 0; //always build from bottom
             } else if (Baritone.settings().layerOrder.value) { // reverse order
+                maxInclusive = totalLength - 1;
                 minInclusive = totalLength - layer * layerHeight;
             } else { // low to high (default)
+                minInclusive = 0;
                 maxInclusive = layer * layerHeight - 1;
             }
 
@@ -1130,6 +1134,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         name = null;
         schematic = null;
         realSchematic = null;
+        layer = Baritone.settings().buildOnlyLayer.value != -1 ? Baritone.settings().buildOnlyLayer.value : Baritone.settings().startAtLayer.value;
         numRepeats = 0;
         paused = false;
         observedCompleted = null;
