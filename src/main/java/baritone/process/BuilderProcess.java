@@ -116,7 +116,8 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             int layerType = Baritone.settings().layerType.value;
             if (layerType != 2 && layerType != 3) {
                 logDirect("StaircaseMapArtMode requires LayerType to be 2 or 3!");
-                this.stopAtHeight = 0;
+                onLostControl();
+                return;
             }
         }
         // TODO this preserves the old behavior, but maybe we should bake the setting value right here
@@ -1478,12 +1479,12 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         for (Set<BlockPos> component : components) {
             if (component.contains(pos)) {
                 // Check if any block belonging to this component has a lower Y
-                // AND is not yet placed in the world.
+                // AND is not yet correctly placed in the world.
                 for (BlockPos p : component) {
                     if (p.getY() < pos.getY()) {
-                        // Check if the block at p is AIR in the world
-                        // If it is AIR, it means it's not placed yet, so we cannot place the current block
-                        if (ctx.world().getBlockState(p).isAir()) {
+                        BlockState current = ctx.world().getBlockState(p);
+                        BlockState desired = schematic.desiredState(p.getX() - origin.getX(), p.getY() - origin.getY(), p.getZ() - origin.getZ(), current, approxPlaceable);
+                        if (!valid(current, desired, false)) {
                             return false;
                         }
                     }
