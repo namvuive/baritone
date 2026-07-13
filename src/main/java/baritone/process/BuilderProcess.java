@@ -153,7 +153,11 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                 if (minim.isPresent() && maxim.isPresent()) {
                     int startAtHeight = Baritone.settings().layerOrder.value ? y + schematic.heightY() - maxim.getAsInt() : minim.getAsInt() - y;
                     this.stopAtHeight = (Baritone.settings().layerOrder.value ? y + schematic.heightY() - minim.getAsInt() : maxim.getAsInt() - y) + 1;
-                    this.layer = Math.max(this.layer, startAtHeight / Baritone.settings().layerHeight.value);  // startAtLayer or startAtHeight, whichever is highest
+                    if (Baritone.settings().layerType.value == 2 || Baritone.settings().layerType.value == 3) {
+                        logDebug("buildOnlySelection ignores startAtHeight for non-Y layer types");
+                    } else {
+                        this.layer = Math.max(this.layer, startAtHeight / Baritone.settings().layerHeight.value);
+                    }
                     logDebug(String.format("Schematic starts at y=%s with height %s", y, schematic.heightY()));
                     logDebug(String.format("Selection starts at y=%s and ends at y=%s", minim.getAsInt(), maxim.getAsInt()));
                     logDebug(String.format("Considering relevant height %s - %s", startAtHeight, this.stopAtHeight));
@@ -568,7 +572,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             }
 
             if (Baritone.settings().buildOnlyLayer.value != -1) {
-                // Single layer mode: build only the specified layer slice
+                // Single layer mode: build only the specified layer, then stop
                 if (Baritone.settings().layerOrder.value) { // reverse order
                     maxInclusive = totalLength - 1 - layer * layerHeight;
                     minInclusive = Math.max(0, maxInclusive - layerHeight + 1);
@@ -576,19 +580,25 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                     minInclusive = layer * layerHeight;
                     maxInclusive = Math.min(totalLength - 1, minInclusive + layerHeight - 1);
                 }
+            } else if (Baritone.settings().startAtLayer.value > 0) {
+                // Progressive single-layer mode from start coordinate
+                if (Baritone.settings().layerOrder.value) { // reverse order
+                    maxInclusive = totalLength - 1 - (layer - Baritone.settings().startAtLayer.value);
+                    minInclusive = Math.max(0, maxInclusive - layerHeight + 1);
+                } else { // low to high (default)
+                    minInclusive = layer;
+                    maxInclusive = Math.min(totalLength - 1, layer + layerHeight - 1);
+                }
             } else if (Baritone.settings().staircaseMapArtMode.value) {
                 // custom staircase logic: minInclusive based on y coordinate of schematic
-                int startBase = Baritone.settings().startAtLayer.value * layerHeight;
-                minInclusive = startBase;
-                maxInclusive = startBase + layer * layerHeight - 1;
+                minInclusive = 0; // always build from bottom
+                maxInclusive = layer * layerHeight - 1;
             } else if (Baritone.settings().layerOrder.value) { // reverse order
-                int startBase = Baritone.settings().startAtLayer.value * layerHeight;
-                maxInclusive = totalLength - 1 - startBase;
-                minInclusive = Math.max(0, totalLength - layer * layerHeight - startBase);
+                maxInclusive = totalLength - 1;
+                minInclusive = Math.max(0, totalLength - layer * layerHeight);
             } else { // low to high (default)
-                int startBase = Baritone.settings().startAtLayer.value * layerHeight;
-                maxInclusive = startBase + layer * layerHeight - 1;
-                minInclusive = startBase;
+                maxInclusive = layer * layerHeight - 1;
+                minInclusive = 0;
             }
 
             schematic = new ISchematic() {
@@ -642,10 +652,27 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             } else { // Y
                 totalLength = realSchematic.heightY();
             }
-            if (Baritone.settings().buildOnlyLayer.value == -1 && Baritone.settings().buildInLayers.value && layer * Baritone.settings().layerHeight.value < totalLength) {
-                logDirect("Starting layer " + layer);
-                layer++;
-                return onTick(calcFailed, isSafeToCancel, recursions + 1);
+            if (Baritone.settings().buildOnlyLayer.value == -1 && Baritone.settings().buildInLayers.value) {
+                boolean moreLayers;
+                if (Baritone.settings().startAtLayer.value > 0) {
+                    if (Baritone.settings().layerOrder.value) {
+                        int revMax = totalLength - 1 - (layer - Baritone.settings().startAtLayer.value);
+                        moreLayers = revMax >= Baritone.settings().startAtLayer.value;
+                    } else {
+                        moreLayers = layer < totalLength;
+                    }
+                } else {
+                    moreLayers = layer * Baritone.settings().layerHeight.value < totalLength;
+                }
+                if (moreLayers) {
+                    logDirect("Starting layer " + layer);
+                    if (Baritone.settings().startAtLayer.value > 0) {
+                        layer += Baritone.settings().layerHeight.value;
+                    } else {
+                        layer++;
+                    }
+                    return onTick(calcFailed, isSafeToCancel, recursions + 1);
+                }
             }
             Vec3i repeat = Baritone.settings().buildRepeat.value;
             int max = Baritone.settings().buildRepeatCount.value;
@@ -1471,7 +1498,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         Set<BlockPos> blocks = new HashSet<>();
         int layerType = Baritone.settings().layerType.value;
         int layerHeight = Baritone.settings().layerHeight.value;
-        int start = layer * layerHeight;
+        int start = Baritone.settings().startAtLayer.value > 0 ? layer : layer * layerHeight;
         int end = start + layerHeight;
 
         for (int x = 0; x < schematic.widthX(); x++) {
