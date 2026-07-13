@@ -19,6 +19,8 @@ package baritone.utils;
 
 import baritone.Baritone;
 import baritone.api.BaritoneAPI;
+import baritone.api.event.events.type.EventState;
+import baritone.api.event.events.PlayerUpdateEvent;
 import baritone.api.event.events.TickEvent;
 import baritone.api.utils.IInputOverrideHandler;
 import baritone.api.utils.input.Input;
@@ -89,15 +91,26 @@ public final class InputOverrideHandler extends Behavior implements IInputOverri
     }
 
     @Override
+    public void onPlayerUpdate(PlayerUpdateEvent event) {
+        if (event.getState() == EventState.PRE) {
+            // Process block break/place AFTER LookBehavior has applied the rotation.
+            // onPlayerUpdate(PRE) fires after onTick(IN), and LookBehavior runs first
+            // (registration order: LookBehavior → PathingBehavior → InventoryBehavior → InputOverrideHandler).
+            // This ensures USE_ITEM/PLAYER_DIGGING packets carry the same rotation as the
+            // following movement packet, avoiding BadPacketsJ (USE_ITEM rotation mismatch).
+            if (isInputForcedDown(Input.CLICK_LEFT)) {
+                setInputForceState(Input.CLICK_RIGHT, false);
+            }
+            blockBreakHelper.tick(isInputForcedDown(Input.CLICK_LEFT));
+            blockPlaceHelper.tick(isInputForcedDown(Input.CLICK_RIGHT));
+        }
+    }
+
+    @Override
     public final void onTick(TickEvent event) {
         if (event.getType() == TickEvent.Type.OUT) {
             return;
         }
-        if (isInputForcedDown(Input.CLICK_LEFT)) {
-            setInputForceState(Input.CLICK_RIGHT, false);
-        }
-        blockBreakHelper.tick(isInputForcedDown(Input.CLICK_LEFT));
-        blockPlaceHelper.tick(isInputForcedDown(Input.CLICK_RIGHT));
 
         if (inControl()) {
             if (ctx.player().input.getClass() != PlayerMovementInput.class) {
