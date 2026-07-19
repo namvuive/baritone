@@ -1182,7 +1182,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             return false;
         }
         if (Baritone.settings().stateIgnoredBlocks.value.contains(first.getBlock())) {
-            return first.equals(second);
+            return true;
         }
         boolean ignoreDirection = Baritone.settings().buildIgnoreDirection.value;
         List<String> ignoredProps = Baritone.settings().buildIgnoreProperties.value;
