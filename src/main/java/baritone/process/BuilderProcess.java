@@ -1173,10 +1173,16 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
 
     private static boolean sameBlockstate(BlockState first, BlockState second) {
         if (first.getBlock() != second.getBlock()) {
+            if (Baritone.settings().allowReplaceGrassBlockWithDirt.value) {
+                if ((first.getBlock() == Blocks.GRASS_BLOCK && second.getBlock() == Blocks.DIRT)
+                        || (first.getBlock() == Blocks.DIRT && second.getBlock() == Blocks.GRASS_BLOCK)) {
+                    return true;
+                }
+            }
             return false;
         }
-        if (first.getBlock() instanceof PressurePlateBlock || first.getBlock() instanceof WeightedPressurePlateBlock) {
-            return true;
+        if (Baritone.settings().stateIgnoredBlocks.value.contains(first.getBlock())) {
+            return first.equals(second);
         }
         boolean ignoreDirection = Baritone.settings().buildIgnoreDirection.value;
         List<String> ignoredProps = Baritone.settings().buildIgnoreProperties.value;
@@ -1335,7 +1341,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                 if (sch.getBlock() instanceof AirBlock) {
                     return placeBlockCost * Baritone.settings().placeIncorrectBlockPenaltyMultiplier.value;
                 }
-                if (placeable.contains(sch)) {
+                if (containsBlockState(placeable, sch)) {
                     // Staircase priority logic:
                     // If staircase mode is active, check if this block is the next in line.
                     // If not, increase the cost significantly to de-prioritize it.
