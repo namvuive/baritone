@@ -108,13 +108,21 @@ public final class InventoryBehavior extends Behavior implements Helper {
                         antiCheatPhase = 2;
                         antiCheatTicks = closeDelay;
                     } else {
-                        if (mc.screen != null) mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0));
+                        try {
+                            mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0));
+                        } catch(NullPointerException e) {
+                            logDebug("mc.screen is null");
+                        }
                         antiCheatPhase = 0;
                         lastTickRequestedMove = null;
                         antiCheatPostSequenceCooldown = 5;
                     }
                 } else if (antiCheatPhase == 2) {
-                    if (mc.screen != null) mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0));
+                    try {
+                        mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0));
+                    } catch(NullPointerException e) {
+                        logDebug("mc.screen is null");
+                    }
                     antiCheatPhase = 0;
                     lastTickRequestedMove = null;
                     antiCheatPostSequenceCooldown = 5;
