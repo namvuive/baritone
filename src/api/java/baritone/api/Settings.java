@@ -259,6 +259,66 @@ public final class Settings {
     )));
 
     /**
+     * Blocks that require a solid block below them when being placed.
+     * Unlike doNotPlaceOn, this controls the placement support requirement
+     * rather than what other blocks can be placed on top.
+     */
+    public final Setting<List<Block>> needsSupportBlocks = new Setting<>(new ArrayList<>(Arrays.asList(
+            Blocks.WHITE_CARPET,
+            Blocks.ORANGE_CARPET,
+            Blocks.MAGENTA_CARPET,
+            Blocks.LIGHT_BLUE_CARPET,
+            Blocks.YELLOW_CARPET,
+            Blocks.LIME_CARPET,
+            Blocks.PINK_CARPET,
+            Blocks.GRAY_CARPET,
+            Blocks.LIGHT_GRAY_CARPET,
+            Blocks.CYAN_CARPET,
+            Blocks.PURPLE_CARPET,
+            Blocks.BLUE_CARPET,
+            Blocks.BROWN_CARPET,
+            Blocks.GREEN_CARPET,
+            Blocks.RED_CARPET,
+            Blocks.BLACK_CARPET,
+            Blocks.MOSS_CARPET,
+            Blocks.STONE_PRESSURE_PLATE,
+            Blocks.OAK_PRESSURE_PLATE,
+            Blocks.SPRUCE_PRESSURE_PLATE,
+            Blocks.BIRCH_PRESSURE_PLATE,
+            Blocks.JUNGLE_PRESSURE_PLATE,
+            Blocks.ACACIA_PRESSURE_PLATE,
+            Blocks.DARK_OAK_PRESSURE_PLATE,
+            Blocks.CRIMSON_PRESSURE_PLATE,
+            Blocks.WARPED_PRESSURE_PLATE,
+            Blocks.MANGROVE_PRESSURE_PLATE,
+            Blocks.CHERRY_PRESSURE_PLATE,
+            Blocks.BAMBOO_PRESSURE_PLATE,
+            Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE,
+            Blocks.HEAVY_WEIGHTED_PRESSURE_PLATE,
+            Blocks.CANDLE,
+            Blocks.WHITE_CANDLE,
+            Blocks.ORANGE_CANDLE,
+            Blocks.MAGENTA_CANDLE,
+            Blocks.LIGHT_BLUE_CANDLE,
+            Blocks.YELLOW_CANDLE,
+            Blocks.LIME_CANDLE,
+            Blocks.PINK_CANDLE,
+            Blocks.GRAY_CANDLE,
+            Blocks.LIGHT_GRAY_CANDLE,
+            Blocks.CYAN_CANDLE,
+            Blocks.PURPLE_CANDLE,
+            Blocks.BLUE_CANDLE,
+            Blocks.BROWN_CANDLE,
+            Blocks.GREEN_CANDLE,
+            Blocks.RED_CANDLE,
+            Blocks.BLACK_CANDLE,
+            Blocks.RAIL,
+            Blocks.POWERED_RAIL,
+            Blocks.DETECTOR_RAIL,
+            Blocks.ACTIVATOR_RAIL
+    )));
+
+    /**
      * this multiplies the break speed, if set above 1 it's "encourage breaking" instead
      */
     public final Setting<Double> avoidBreakingMultiplier = new Setting<>(.1);

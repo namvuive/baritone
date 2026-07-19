@@ -893,9 +893,13 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         placeable.forEach(pos -> {
             BlockState desired = bcc.getSchematic(pos.x, pos.y, pos.z, bcc.bsi.get0(pos));
             boolean needsSupport = desired != null
-                    && (desired.getBlock() instanceof CarpetBlock
-                    || desired.getBlock() instanceof PressurePlateBlock
-                    || desired.getBlock() instanceof WeightedPressurePlateBlock);
+                    && Baritone.settings().needsSupportBlocks.value.contains(desired.getBlock());
+            if (needsSupport) {
+                BlockState below = bcc.bsi.get0(pos.below());
+                if (Baritone.settings().buildSkipBlocks.value.contains(below.getBlock())) {
+                    return;
+                }
+            }
             if (!placeable.contains(pos.below()) && !placeable.contains(pos.below(2))
                     && (!needsSupport || (!incorrectPositions.contains(pos.below()) && !incorrectPositions.contains(pos.below(2))))) {
                 toPlace.add(placementGoal(pos, bcc));
