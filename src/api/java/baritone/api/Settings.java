@@ -332,6 +332,56 @@ public final class Settings {
     )));
 
     /**
+     * Blocks whose block state should be ignored during builder verification.
+     * If a block is in this list, any state of that block will be considered correct.
+     */
+    public final Setting<List<Block>> stateIgnoredBlocks = new Setting<>(new ArrayList<>(Arrays.asList(
+            Blocks.STONE_PRESSURE_PLATE,
+            Blocks.OAK_PRESSURE_PLATE,
+            Blocks.SPRUCE_PRESSURE_PLATE,
+            Blocks.BIRCH_PRESSURE_PLATE,
+            Blocks.JUNGLE_PRESSURE_PLATE,
+            Blocks.ACACIA_PRESSURE_PLATE,
+            Blocks.DARK_OAK_PRESSURE_PLATE,
+            Blocks.CRIMSON_PRESSURE_PLATE,
+            Blocks.WARPED_PRESSURE_PLATE,
+            Blocks.MANGROVE_PRESSURE_PLATE,
+            Blocks.CHERRY_PRESSURE_PLATE,
+            Blocks.BAMBOO_PRESSURE_PLATE,
+            Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE,
+            Blocks.HEAVY_WEIGHTED_PRESSURE_PLATE,
+            Blocks.CANDLE,
+            Blocks.WHITE_CANDLE,
+            Blocks.ORANGE_CANDLE,
+            Blocks.MAGENTA_CANDLE,
+            Blocks.LIGHT_BLUE_CANDLE,
+            Blocks.YELLOW_CANDLE,
+            Blocks.LIME_CANDLE,
+            Blocks.PINK_CANDLE,
+            Blocks.GRAY_CANDLE,
+            Blocks.LIGHT_GRAY_CANDLE,
+            Blocks.CYAN_CANDLE,
+            Blocks.PURPLE_CANDLE,
+            Blocks.BLUE_CANDLE,
+            Blocks.BROWN_CANDLE,
+            Blocks.GREEN_CANDLE,
+            Blocks.RED_CANDLE,
+            Blocks.BLACK_CANDLE,
+            Blocks.RAIL,
+            Blocks.POWERED_RAIL,
+            Blocks.DETECTOR_RAIL,
+            Blocks.ACTIVATOR_RAIL,
+            Blocks.REDSTONE_WIRE
+    )));
+
+    /**
+     * If this is true, the builder will accept dirt blocks as substitutes for grass blocks.
+     * Dirt placed where a grass block should be will not be flagged as incorrect.
+     * Grass blocks in the player's inventory will still be prioritized over dirt.
+     */
+    public final Setting<Boolean> allowReplaceGrassBlockWithDirt = new Setting<>(false);
+
+    /**
      * If this setting is true, Baritone will never break a block that is adjacent to an unsupported falling block.
      * <p>
      * I.E. it will never trigger cascading sand / gravel falls
